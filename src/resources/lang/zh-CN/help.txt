@@ -1,0 +1,55 @@
+Nover {0} - Windows Node.js 版本管理器
+
+用法
+  nover <命令> [选项]
+
+命令
+  install <目标>         安装 Node.js 版本
+  use <版本>             切换到已安装版本
+  list, ls               列出本地版本
+  remote [主版本]        查询在线版本
+  remove, rm <版本>      删除已安装版本
+  check                  检查 Nover 安装状态
+  --version              显示 Nover 版本
+  --help                 显示此帮助
+
+选项
+  --use                  安装后立即切换
+  --arch <架构>          x64 | arm64 | x86
+  --mirror <地址>        临时使用其他 Node.js 镜像
+  --lts                  只显示 LTS 版本
+  --all                  显示全部匹配的在线版本
+  --major <主版本>       按主版本筛选在线版本
+  --offset <数量>        跳过指定数量的结果
+  --limit <数量>         最多显示数量（默认 20，最大 5000）
+
+版本目标
+  latest                 最新 Current 版本
+  lts                    最新 LTS 版本
+  20                     最高的 Node 20 版本
+  20.20                  最高的 20.20 版本
+  20.20.2                精确版本
+
+注意
+  install                只安装；添加 --use 后立即切换
+  use                    仅限已安装版本
+  remove                 不能删除当前全局版本
+  remote                 只查询在线版本，不修改本地
+  --all 与 --limit       不能同时使用
+
+配置
+  nover.config           与 nover.exe 位于同一目录
+  优先级                 命令行 > nover.config > 默认值
+  lang                   auto 或 lang\ 下的精确目录名
+                         未匹配时使用 lang\default
+  arch                   auto | x64 | arm64 | x86
+  mirror                 Node.js 分发镜像
+  install_path           由 Nover 自动维护
+
+示例
+  nover install lts --use
+  nover use 20.20.2
+  nover list
+  nover remote 20 --all
+  nover remove 20.20.2
+  nover check

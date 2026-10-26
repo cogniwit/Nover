@@ -1,0 +1,55 @@
+Nover {0} - Node.js version manager for Windows
+
+USAGE
+  nover <command> [options]
+
+COMMANDS
+  install <target>       Install a Node.js version
+  use <version>          Activate an installed version
+  list, ls               List installed versions
+  remote [major]         List available online versions
+  remove, rm <version>   Remove an installed version
+  check                  Check the Nover installation
+  --version              Show the Nover version
+  --help                 Show this help
+
+OPTIONS
+  --use                  Activate after installation
+  --arch <arch>          x64 | arm64 | x86
+  --mirror <url>         Use another Node.js distribution mirror
+  --lts                  Show LTS versions only
+  --all                  Show all matching remote versions
+  --major <version>      Filter remote versions by major version
+  --offset <count>       Skip remote results
+  --limit <count>        Maximum results (default: 20, maximum: 5000)
+
+TARGETS
+  latest                 Latest current release
+  lts                    Latest LTS release
+  20                     Highest Node 20 release
+  20.20                  Highest 20.20 release
+  20.20.2                Exact release
+
+NOTES
+  install                Installs only; add --use to activate
+  use                    Requires an installed version
+  remove                 The active global version cannot be removed
+  remote                 Reads online releases; changes nothing locally
+  --all and --limit      Cannot be used together
+
+CONFIG
+  nover.config           Located next to nover.exe
+  Priority               command line > nover.config > defaults
+  lang                   auto or an exact directory name
+                         Falls back to lang\default
+  arch                   auto | x64 | arm64 | x86
+  mirror                 Node.js distribution mirror
+  install_path           Managed automatically by Nover
+
+EXAMPLES
+  nover install lts --use
+  nover use 20.20.2
+  nover list
+  nover remote 20 --all
+  nover remove 20.20.2
+  nover check
