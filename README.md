@@ -232,6 +232,6 @@ Nover/
 
 ## 许可证
 
-本项目使用 [MIT License](LICENSE)。
+本项目使用 [MIT License](LICENSE) 发布。
 
 Nover 是独立项目，与 Node.js 官方没有隶属关系。
