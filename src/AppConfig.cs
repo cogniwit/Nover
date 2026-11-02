@@ -108,31 +108,21 @@ namespace Nover
             }
             File.WriteAllText(
                 path,
-                "# Nover portable settings\r\n"
-                + "# Nover 便携配置\r\n"
+                "# Nover settings\r\n"
                 + "# Must be located next to nover.exe.\r\n"
-                + "# 本文件必须与 nover.exe 位于同一目录。\r\n"
                 + "# One setting per line. Comments must use their own line.\r\n"
-                + "# 每项单独一行；注释必须独占一行，不能写在值后面。\r\n"
                 + "# Priority: command line > this file > detected defaults.\r\n"
-                + "# 优先级：命令行参数 > 本文件 > 自动检测默认值。\r\n"
                 + "\r\n"
-                + "# Language: auto, or an exact directory under lang\\ (for example zh-CN).\r\n"
-                + "# 语言：auto 跟随 Windows；或填写 lang\\ 下的精确目录名，例如 zh-CN。\r\n"
-                + "# If no exact match exists, lang\\default is used.\r\n"
-                + "# 未精确匹配时使用 lang\\default。\r\n"
+                + "# Language: auto follows the system language; otherwise use a directory under lang\\.\r\n"
                 + "lang=auto\r\n"
                 + "\r\n"
                 + "# Architecture: auto, x64, arm64, or x86.\r\n"
-                + "# 架构：auto 自动识别，也可填写 x64、arm64 或 x86。\r\n"
                 + "arch=auto\r\n"
                 + "\r\n"
                 + "# Node.js distribution mirror. Use an absolute HTTP/HTTPS URL.\r\n"
-                + "# Node.js 下载镜像：请填写绝对的 HTTP/HTTPS URL。\r\n"
                 + "mirror=https://nodejs.org/dist/\r\n"
                 + "\r\n"
                 + "# Current installation path. Managed automatically by Nover.\r\n"
-                + "# 当前安装目录：由 Nover 自动维护，请勿手动修改。\r\n"
                 + "install_path=\r\n");
         }
     }

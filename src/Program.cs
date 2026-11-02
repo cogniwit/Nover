@@ -15,7 +15,7 @@ namespace Nover
 {
     internal static class Program
     {
-        internal const string ToolVersion = "1.0.1";
+        internal const string ToolVersion = "1.0.2";
         internal const string FileVersion = ToolVersion + ".0";
 
         private static int Main(string[] args)
@@ -23,11 +23,26 @@ namespace Nover
             try
             {
                 Console.OutputEncoding = Encoding.UTF8;
-                if (!L.IsAvailable)
+                string configuredLanguage = GetConfiguredLanguage();
+                string activeLanguage;
+                bool usedLanguageFallback;
+                if (!L.LoadFallback(
+                    configuredLanguage,
+                    out activeLanguage,
+                    out usedLanguageFallback))
                 {
-                    Console.Error.WriteLine(L.MissingLanguageMessage);
+                    Console.Error.WriteLine(
+                        "Nover language files are missing. Please download Nover again.");
                     return 1;
                 }
+                if (usedLanguageFallback)
+                {
+                    Console.Error.WriteLine(L.T(
+                        "language.fallback",
+                        configuredLanguage,
+                        activeLanguage));
+                }
+
                 string invokedName = Path.GetFileNameWithoutExtension(
                     Environment.GetCommandLineArgs()[0]);
                 // node.exe 是 nover.exe 的副本，按被调用文件名分流。
@@ -49,25 +64,83 @@ namespace Nover
                     return ShimDispatcher.Run(args[1], forwarded);
                 }
 
+                if (args.Length == 1
+                    && String.Equals(args[0], "--lang", StringComparison.Ordinal))
+                {
+                    PrintAvailableLanguages();
+                    return 0;
+                }
+
+                string[] effectiveArgs;
+                string language;
+                bool languageSpecified;
+                string languageError;
+                string languageValue;
+                if (!TryExtractLanguage(
+                    args,
+                    out effectiveArgs,
+                    out language,
+                    out languageSpecified,
+                    out languageError,
+                    out languageValue))
+                {
+                    Console.Error.WriteLine(
+                        L.T("error.prefix") + " "
+                        + L.T(languageError, languageValue));
+                    return 1;
+                }
+                if (languageSpecified && !L.Load(language))
+                {
+                    string fallbackLanguage;
+                    bool ignoredFallback;
+                    if (!L.LoadFallback(
+                        configuredLanguage,
+                        out fallbackLanguage,
+                        out ignoredFallback))
+                    {
+                        Console.Error.WriteLine(
+                            "Nover language files are missing. Please download Nover again.");
+                        return 1;
+                    }
+                    Console.Error.WriteLine(
+                        L.T("error.prefix") + " "
+                        + L.T("language.pack_missing", language));
+                    return 1;
+                }
+                args = effectiveArgs;
+
+                if (languageSpecified)
+                {
+                    if (args.Length > 0)
+                    {
+                        Console.Error.WriteLine(
+                            L.T("error.prefix") + " "
+                            + L.T("language.switch_only"));
+                        return 1;
+                    }
+                    PortableSettings.EnsureTemplate(AppPaths.ExecutableDirectory);
+                    PortableSettings.SetValue("lang", language);
+                    Console.WriteLine(L.T("language.changed", language));
+                    return 0;
+                }
+
                 bool informational = args.Length == 1
                     && (String.Equals(args[0], "--help", StringComparison.OrdinalIgnoreCase)
                         || String.Equals(args[0], "--version", StringComparison.OrdinalIgnoreCase));
                 bool configurationChanged = false;
-                if (!informational && !SelfInstaller.EnsureReady(out configurationChanged))
+                if (!informational
+                    && !SelfInstaller.EnsureReady(out configurationChanged))
                 {
                     return 1;
                 }
 
                 if (args.Length == 0)
                 {
-                    if (configurationChanged)
+                    if (!configurationChanged)
                     {
-                        // 留出时间查看初始化结果，避免窗口直接关闭。
-                        Console.ReadLine();
-                        return 0;
+                        PrintHelp();
                     }
-                    PrintHelp();
-                    return 1;
+                    return 0;
                 }
 
                 Options options = Options.Parse(args);
@@ -79,7 +152,7 @@ namespace Nover
                 }
                 if (command == "--version")
                 {
-                    Console.WriteLine(ToolVersion);
+                    Console.WriteLine(L.T("app.banner", ToolVersion));
                     return 0;
                 }
 
@@ -251,6 +324,115 @@ namespace Nover
                 throw new CliException(L.T("remote.major_invalid"));
             }
             return major;
+        }
+
+        private static bool TryExtractLanguage(
+            string[] args,
+            out string[] effectiveArgs,
+            out string language,
+            out bool languageSpecified,
+            out string errorKey,
+            out string errorValue)
+        {
+            List<string> remaining = new List<string>();
+            language = L.SystemLanguage;
+            languageSpecified = false;
+            errorKey = null;
+            errorValue = null;
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                string argument = args[i];
+                string value = null;
+                if (String.Equals(argument, "--lang", StringComparison.Ordinal))
+                {
+                    if (i + 1 >= args.Length
+                        || args[i + 1].StartsWith("--", StringComparison.Ordinal))
+                    {
+                        effectiveArgs = args;
+                        errorKey = "language.value_required";
+                        return false;
+                    }
+                    value = args[++i];
+                }
+                else if (argument.StartsWith("--lang=", StringComparison.Ordinal))
+                {
+                    value = argument.Substring("--lang=".Length);
+                }
+
+                if (value == null)
+                {
+                    remaining.Add(argument);
+                    continue;
+                }
+
+                string normalized = NormalizeLanguage(value);
+                if (normalized == null)
+                {
+                    effectiveArgs = args;
+                    errorKey = "language.unsupported";
+                    errorValue = value;
+                    return false;
+                }
+                language = normalized;
+                languageSpecified = true;
+            }
+
+            effectiveArgs = remaining.ToArray();
+            return true;
+        }
+
+        private static string NormalizeLanguage(string value)
+        {
+            string language = (value ?? String.Empty).Trim();
+            if (language.Length == 0
+                || language == "."
+                || language == ".."
+                || language.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                return null;
+            }
+            return language;
+        }
+
+        private static string GetConfiguredLanguage()
+        {
+            string configured = PortableSettings.GetValue("lang");
+            if (String.IsNullOrWhiteSpace(configured)
+                || String.Equals(configured.Trim(), "auto", StringComparison.OrdinalIgnoreCase))
+            {
+                return L.SystemLanguage;
+            }
+            return NormalizeLanguage(configured) ?? L.SystemLanguage;
+        }
+
+        private static void PrintAvailableLanguages()
+        {
+            List<string> languages = L.GetAvailableLanguages();
+
+            Console.WriteLine(L.T("language.available"));
+            foreach (string language in languages)
+            {
+                List<string> tags = new List<string>();
+                if (String.Equals(
+                    language,
+                    L.SystemLanguage,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    tags.Add(L.T("language.default"));
+                }
+                if (String.Equals(
+                    language,
+                    L.SelectedLanguage,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    tags.Add(L.T("language.current"));
+                }
+                string suffix = tags.Count == 0
+                    ? String.Empty
+                    : " (" + String.Join(", ", tags.ToArray()) + ")";
+                Console.WriteLine("  " + language + suffix);
+            }
         }
 
         private static void RemoveVersion(

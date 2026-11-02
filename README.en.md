@@ -1,6 +1,6 @@
 # Nover
 
-English | [简体中文](README.md)
+English | [简体中文](README.md) | [Changelog](CHANGELOG.md)
 
 Nover is a portable global Node.js version manager for Windows. It uses stable shims to switch `node`, `npm`, and `npx` without administrator privileges or directory junctions.
 
@@ -25,7 +25,7 @@ Nover manages one global Node.js version for the current user. Versions, configu
 - Switches versions without administrator privileges
 - Does not create junctions or symbolic links
 - Supports `x64`, `arm64`, and `x86`
-- Keeps all language resources external
+- Follows the system language by default and supports external language packs
 - Remains portable, with configuration and versions stored beside the executable
 - Provides remote version listing and installation diagnostics
 
@@ -49,6 +49,8 @@ Enter that directory and run:
 .\nover.exe
 ```
 
+To force English on a Chinese-language system, run `nover --lang English` first.
+
 The first run asks whether to create shims and add the Nover directory to the user PATH:
 
 ```text
@@ -65,6 +67,8 @@ node -v
 
 After initialization or repair, reopen the terminal to ensure the environment is updated.
 
+Without arguments, Nover initializes itself when needed; otherwise it shows help.
+
 ## Commands
 
 | Command | Description |
@@ -77,6 +81,12 @@ After initialization or repair, reopen the terminal to ensure the environment is
 | `nover check` | Check directories, shims, PATH, and configuration |
 | `nover --version` | Show the Nover version |
 | `nover --help` | Show help |
+
+### General Option
+
+| Option | Description |
+| --- | --- |
+| `--lang <language>` | Switch and save a language directory under `lang\` |
 
 ### Install Options
 
@@ -99,6 +109,46 @@ After initialization or repair, reopen the terminal to ensure the environment is
 
 `--all` and `--limit` cannot be used together.
 
+## Languages
+
+When no language is configured manually, Nover follows the Windows UI language:
+
+```text
+Chinese system -> Chinese
+English system -> English
+Other systems  -> English
+```
+
+The default setting is `lang=auto`.
+
+After a manual change, the selected language is saved in `nover.config`; later commands do not need `--lang`:
+
+```powershell
+nover --lang
+nover --lang English
+nover list
+
+nover --lang Chinese
+```
+
+Runtime language files are stored in `lang\Chinese` and `lang\English`. To add another language, copy either directory to a new name and translate its files:
+
+```text
+lang\MyLanguage\
+  messages.ini
+  help.txt
+```
+
+Then run:
+
+```powershell
+nover --lang MyLanguage
+```
+
+Each language directory must contain both `messages.ini` and `help.txt`.
+
+If the configured language directory is missing, Nover falls back to English first. If English is also unavailable, it tries the remaining complete language directories in name order.
+
 ## Version Selection
 
 Nover supports only clear numeric version selectors:
@@ -107,16 +157,16 @@ Nover supports only clear numeric version selectors:
 | --- | --- |
 | `latest` | Latest Current release |
 | `lts` | Latest LTS release |
-| `20` | Highest Node 20 release |
-| `20.20` | Highest Node 20.20 release |
-| `20.20.2` | Exact Node 20.20.2 |
+| `24` | Highest Node 24 release |
+| `24.22` | Highest Node 24.22 patch release |
+| `24.22.1` | Exact Node 24.22.1 |
 
 ## Common Workflows
 
 Install and activate:
 
 ```powershell
-nover install 20.20.2 --use
+nover install 24.22.1 --use
 ```
 
 List local versions:
@@ -126,25 +176,25 @@ nover list
 ```
 
 ```text
-Current: v20.20.2
+Current: v24.22.1
 
 Installed:
+  24.22.1
   22.23.4
-  20.20.2
 ```
 
 Query remote versions:
 
 ```powershell
 nover remote --limit 50
-nover remote 20 --all
+nover remote 24 --all
 nover remote --major 24 --lts
 ```
 
 Remove a version:
 
 ```powershell
-nover remove 20
+nover remove 24
 ```
 
 The active global version cannot be removed. Activate another version first.
@@ -225,6 +275,8 @@ Nover/
       nover.config
       nover.ico
       lang/
+        Chinese/
+        English/
   outputs/
   Nover-<version>-windows.zip
   Nover-<version>-windows.zip.sha256

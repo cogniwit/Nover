@@ -1,0 +1,40 @@
+Nover {0} - Node.js version manager for Windows
+
+USAGE
+  nover                    Initialize if needed; otherwise show help
+  nover --version          Show version information
+  nover --help             Show this help
+  nover --lang             List available languages
+  nover --lang <language>  Switch and save language
+  nover <command> [options]
+
+COMMANDS
+  install <target>         Install Node.js
+  use <version>            Activate an installed version
+  list, ls                 List installed versions
+  remote [major]           List available online versions
+  remove, rm <version>     Remove a non-active version
+  check                    Check the Nover installation
+
+OPTIONS
+  --use                    Activate after installation
+  --arch <arch>            x64 | arm64 | x86
+  --mirror <url>           Use another Node.js mirror
+  --lts                    Show LTS versions only
+  --all                    Show all matches (not with --limit)
+  --major <number>         Filter remote versions by major version
+  --offset <count>         Skip remote results
+  --limit <count>          Limit remote results (default: 20)
+
+TARGETS
+  latest | lts             Latest Current or LTS release
+  24                       Highest Node 24 release
+  24.22                    Highest Node 24.22 patch release
+  24.22.1                  Exact release
+
+EXAMPLES
+  nover --lang English
+  nover install lts --use
+  nover use 24.22.1
+  nover remote 24 --all
+  nover check

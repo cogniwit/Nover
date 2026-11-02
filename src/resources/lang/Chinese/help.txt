@@ -1,0 +1,40 @@
+Nover {0} - Windows Node.js 版本管理器
+
+用法
+  nover                    未初始化时初始化，否则显示帮助
+  nover --version          显示版本信息
+  nover --help             显示此帮助
+  nover --lang             列出可用语言
+  nover --lang <语言>      切换并保存语言
+  nover <命令> [选项]
+
+命令
+  install <目标>           安装 Node.js
+  use <版本>               激活已安装版本
+  list, ls                 列出本地版本
+  remote [主版本]          查询在线版本
+  remove, rm <版本>        删除非活动版本
+  check                    检查 Nover 安装
+
+选项
+  --use                    安装后激活
+  --arch <架构>            x64 | arm64 | x86
+  --mirror <地址>          使用其他 Node.js 镜像
+  --lts                    只显示 LTS 版本
+  --all                    显示全部匹配项，不能与 --limit 共用
+  --major <主版本>         按主版本筛选在线版本
+  --offset <数量>          跳过指定数量的结果
+  --limit <数量>           限制结果数量，默认 20
+
+版本目标
+  latest | lts             最新 Current 或 LTS 版本
+  24                       Node 24 的最高版本
+  24.22                    Node 24.22 的最高补丁版本
+  24.22.1                  精确版本
+
+示例
+  nover --lang English
+  nover install lts --use
+  nover use 24.22.1
+  nover remote 24 --all
+  nover check
