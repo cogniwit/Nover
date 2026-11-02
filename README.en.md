@@ -1,6 +1,6 @@
 # Nover
 
-English | [简体中文](README.md)
+English | [简体中文](README.md) | [Changelog](CHANGELOG.md)
 
 Nover is a portable global Node.js version manager for Windows. It uses stable shims to switch `node`, `npm`, and `npx` without administrator privileges or directory junctions.
 
@@ -25,7 +25,7 @@ Nover manages one global Node.js version for the current user. Versions, configu
 - Switches versions without administrator privileges
 - Does not create junctions or symbolic links
 - Supports `x64`, `arm64`, and `x86`
-- Keeps all language resources external
+- Follows the system language by default and supports external language packs
 - Remains portable, with configuration and versions stored beside the executable
 - Provides remote version listing and installation diagnostics
 
@@ -49,6 +49,8 @@ Enter that directory and run:
 .\nover.exe
 ```
 
+To force English on a Chinese-language system, run `nover --lang English` first.
+
 The first run asks whether to create shims and add the Nover directory to the user PATH:
 
 ```text
@@ -65,6 +67,8 @@ node -v
 
 After initialization or repair, reopen the terminal to ensure the environment is updated.
 
+Without arguments, Nover initializes itself when needed; otherwise it shows help.
+
 ## Commands
 
 | Command | Description |
@@ -77,6 +81,12 @@ After initialization or repair, reopen the terminal to ensure the environment is
 | `nover check` | Check directories, shims, PATH, and configuration |
 | `nover --version` | Show the Nover version |
 | `nover --help` | Show help |
+
+### General Option
+
+| Option | Description |
+| --- | --- |
+| `--lang <language>` | Switch and save a language directory under `lang\` |
 
 ### Install Options
 
@@ -99,6 +109,46 @@ After initialization or repair, reopen the terminal to ensure the environment is
 
 `--all` and `--limit` cannot be used together.
 
+## Languages
+
+When no language is configured manually, Nover follows the Windows UI language:
+
+```text
+Chinese system -> Chinese
+English system -> English
+Other systems  -> English
+```
+
+The default setting is `lang=auto`.
+
+After a manual change, the selected language is saved in `nover.config`; later commands do not need `--lang`:
+
+```powershell
+nover --lang
+nover --lang English
+nover list
+
+nover --lang Chinese
+```
+
+Runtime language files are stored in `lang\Chinese` and `lang\English`. To add another language, copy either directory to a new name and translate its files:
+
+```text
+lang\MyLanguage\
+  messages.ini
+  help.txt
+```
+
+Then run:
+
+```powershell
+nover --lang MyLanguage
+```
+
+Each language directory must contain both `messages.ini` and `help.txt`.
+
+If the configured language directory is missing, Nover falls back to English first. If English is also unavailable, it tries the remaining complete language directories in name order.
+
 ## Version Selection
 
 Nover supports only clear numeric version selectors:
@@ -107,16 +157,16 @@ Nover supports only clear numeric version selectors:
 | --- | --- |
 | `latest` | Latest Current release |
 | `lts` | Latest LTS release |
-| `20` | Highest Node 20 release |
-| `20.20` | Highest Node 20.20 release |
-| `20.20.2` | Exact Node 20.20.2 |
+| `24` | Highest Node 24 release |
+| `24.22` | Highest Node 24.22 patch release |
+| `24.22.1` | Exact Node 24.22.1 |
 
 ## Common Workflows
 
 Install and activate:
 
 ```powershell
-nover install 20.20.2 --use
+nover install 24.22.1 --use
 ```
 
 List local versions:
@@ -126,25 +176,25 @@ nover list
 ```
 
 ```text
-Current: v20.20.2
+Current: v24.22.1
 
 Installed:
+  24.22.1
   22.23.4
-  20.20.2
 ```
 
 Query remote versions:
 
 ```powershell
 nover remote --limit 50
-nover remote 20 --all
+nover remote 24 --all
 nover remote --major 24 --lts
 ```
 
 Remove a version:
 
 ```powershell
-nover remove 20
+nover remove 24
 ```
 
 The active global version cannot be removed. Activate another version first.
@@ -154,77 +204,6 @@ Check the installation:
 ```powershell
 nover check
 ```
-
-## Portable Configuration
-
-At runtime, the configuration file must be next to `nover.exe`:
-
-```ini
-# Nover portable settings
-# Nover 便携配置
-# Must be located next to nover.exe.
-# 本文件必须与 nover.exe 位于同一目录。
-# One setting per line. Comments must use their own line.
-# 每项单独一行；注释必须独占一行，不能写在值后面。
-# Priority: command line > this file > detected defaults.
-# 优先级：命令行参数 > 本文件 > 自动检测默认值。
-
-# Language: auto, or an exact directory under lang\ (for example zh-CN).
-# 语言：auto 跟随 Windows；或填写 lang\ 下的精确目录名，例如 zh-CN。
-# If no exact match exists, lang\default is used.
-# 未精确匹配时使用 lang\default。
-lang=auto
-
-# Architecture: auto, x64, arm64, or x86.
-# 架构：auto 自动识别，也可填写 x64、arm64 或 x86。
-arch=auto
-
-# Node.js distribution mirror. Use an absolute HTTP/HTTPS URL.
-# Node.js 下载镜像：请填写绝对的 HTTP/HTTPS URL。
-mirror=https://nodejs.org/dist/
-
-# Current installation path. Managed automatically by Nover.
-# 当前安装目录：由 Nover 自动维护，请勿手动修改。
-install_path=
-```
-
-| Key | Description |
-| --- | --- |
-| `lang` | Language directory name or `auto` |
-| `arch` | `auto`, `x64`, `arm64`, or `x86` |
-| `mirror` | Node.js distribution mirror |
-| `install_path` | Current installation directory, managed by Nover |
-
-Priority:
-
-```text
-command line > nover.config > defaults
-```
-
-The build-time configuration template is stored at `src\resources\nover.config`.
-
-## Languages
-
-Runtime language resources are stored under:
-
-```text
-lang/
-  default/
-    messages.ini
-    help.txt
-  zh-CN/
-    messages.ini
-    help.txt
-```
-
-`lang=auto` uses `CultureInfo.CurrentUICulture.Name`. A value configured directly in `nover.config` is used as the exact directory name:
-
-```text
-lang=zh-CN  matches only lang\zh-CN
-lang=fr-CA  matches only lang\fr-CA
-```
-
-If no exact match exists, Nover uses `lang\default`. A language directory is considered complete only when it contains both `messages.ini` and `help.txt`.
 
 ## How It Works
 
@@ -296,6 +275,8 @@ Nover/
       nover.config
       nover.ico
       lang/
+        Chinese/
+        English/
   outputs/
   Nover-<version>-windows.zip
   Nover-<version>-windows.zip.sha256

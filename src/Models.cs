@@ -7,18 +7,108 @@ namespace Nover
 {
     internal static class L
     {
-        private static readonly string RequestedLanguage = DetectRequestedLanguage();
-        private static readonly string SelectedLanguage = DetectSelectedLanguage();
-        private static readonly Dictionary<string, string> Messages = LoadMessages();
-        private static readonly string HelpText = LoadHelpText();
-
-        public static bool IsAvailable
+        public static string SystemLanguage
         {
-            get { return SelectedLanguage != null; }
+            get
+            {
+                string culture = CultureInfo.CurrentUICulture.Name;
+                if (String.Equals(culture, "zh", StringComparison.OrdinalIgnoreCase)
+                    || culture.StartsWith("zh-", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "Chinese";
+                }
+                return "English";
+            }
         }
 
-        public const string MissingLanguageMessage =
-            "Language pack missing. Please download Nover again.";
+        private static Dictionary<string, string> Messages =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static string HelpText = String.Empty;
+
+        public static string SelectedLanguage { get; private set; }
+
+        public static bool Load(string language)
+        {
+            string root = Path.Combine(
+                AppPaths.ExecutableDirectory,
+                "lang",
+                language);
+            string messagesPath = Path.Combine(root, "messages.ini");
+            string helpPath = Path.Combine(root, "help.txt");
+            if (!File.Exists(messagesPath) || !File.Exists(helpPath))
+            {
+                Messages = new Dictionary<string, string>(
+                    StringComparer.OrdinalIgnoreCase);
+                HelpText = String.Empty;
+                SelectedLanguage = null;
+                return false;
+            }
+
+            Messages = ParseMessages(File.ReadAllText(messagesPath));
+            HelpText = File.ReadAllText(helpPath);
+            SelectedLanguage = language;
+            return true;
+        }
+
+        public static bool LoadFallback(
+            string preferred,
+            out string selected,
+            out bool usedFallback)
+        {
+            usedFallback = false;
+            if (!String.IsNullOrWhiteSpace(preferred) && Load(preferred))
+            {
+                selected = preferred;
+                return true;
+            }
+
+            List<string> candidates = new List<string>();
+            candidates.Add("English");
+            candidates.AddRange(GetAvailableLanguages());
+            HashSet<string> tried = new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+            if (!String.IsNullOrWhiteSpace(preferred))
+            {
+                tried.Add(preferred);
+            }
+
+            foreach (string candidate in candidates)
+            {
+                if (candidate.Length == 0 || !tried.Add(candidate))
+                {
+                    continue;
+                }
+                if (Load(candidate))
+                {
+                    selected = candidate;
+                    usedFallback = true;
+                    return true;
+                }
+            }
+
+            selected = null;
+            return false;
+        }
+
+        public static List<string> GetAvailableLanguages()
+        {
+            List<string> languages = new List<string>();
+            string root = Path.Combine(AppPaths.ExecutableDirectory, "lang");
+            if (!Directory.Exists(root))
+            {
+                return languages;
+            }
+            foreach (string directory in Directory.GetDirectories(root))
+            {
+                if (File.Exists(Path.Combine(directory, "messages.ini"))
+                    && File.Exists(Path.Combine(directory, "help.txt")))
+                {
+                    languages.Add(Path.GetFileName(directory));
+                }
+            }
+            languages.Sort(StringComparer.OrdinalIgnoreCase);
+            return languages;
+        }
 
         public static string T(string key, params object[] values)
         {
@@ -35,17 +125,13 @@ namespace Nover
             }
             catch (FormatException)
             {
-                // 翻译格式错误时保留原文，不中断 CLI。
+                // 格式字符串错误时保留原文。
                 return format;
             }
         }
 
         public static string Help(string version)
         {
-            if (!IsAvailable)
-            {
-                return MissingLanguageMessage;
-            }
             try
             {
                 return String.Format(HelpText, version);
@@ -53,80 +139,6 @@ namespace Nover
             catch (FormatException)
             {
                 return HelpText;
-            }
-        }
-
-        private static string DetectRequestedLanguage()
-        {
-            string configured = PortableSettings.GetValue("lang");
-            if (!String.IsNullOrWhiteSpace(configured)
-                && !String.Equals(configured.Trim(), "auto", StringComparison.OrdinalIgnoreCase))
-            {
-                return configured.Trim();
-            }
-
-            // auto 直接使用 Windows 界面区域性名称。
-            string culture = CultureInfo.CurrentUICulture.Name;
-            return String.IsNullOrWhiteSpace(culture) ? "default" : culture.Trim();
-        }
-
-        private static string DetectSelectedLanguage()
-        {
-            if (IsLanguagePack(RequestedLanguage))
-            {
-                return RequestedLanguage;
-            }
-            if (IsLanguagePack("default"))
-            {
-                return "default";
-            }
-            return null;
-        }
-
-        private static bool IsLanguagePack(string language)
-        {
-            // lang 只能是目录名，不能作为路径解析。
-            if (String.IsNullOrWhiteSpace(language)
-                || language == "."
-                || language == ".."
-                || language.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-            {
-                return false;
-            }
-            string directory = LanguageDirectory(language);
-            return Directory.Exists(directory)
-                && File.Exists(Path.Combine(directory, "messages.ini"))
-                && File.Exists(Path.Combine(directory, "help.txt"));
-        }
-
-        private static Dictionary<string, string> LoadMessages()
-        {
-            Dictionary<string, string> messages =
-                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (SelectedLanguage == null)
-            {
-                return messages;
-            }
-
-            // default 提供基线，所选语言覆盖已有键。
-            if (IsLanguagePack("default"))
-            {
-                OverlayMessages(messages, Path.Combine(LanguageDirectory("default"), "messages.ini"));
-            }
-            if (!String.Equals(SelectedLanguage, "default", StringComparison.OrdinalIgnoreCase))
-            {
-                OverlayMessages(messages, Path.Combine(LanguageDirectory(SelectedLanguage), "messages.ini"));
-            }
-            return messages;
-        }
-
-        private static void OverlayMessages(
-            Dictionary<string, string> messages,
-            string path)
-        {
-            foreach (KeyValuePair<string, string> pair in ParseMessages(File.ReadAllText(path)))
-            {
-                messages[pair.Key] = pair.Value;
             }
         }
 
@@ -147,7 +159,6 @@ namespace Nover
                     continue;
                 }
                 string key = line.Substring(0, separator).Trim();
-                // 支持 \n、\r 转义。
                 string value = line.Substring(separator + 1).Trim()
                     .Replace("\\n", "\n")
                     .Replace("\\r", "\r");
@@ -156,30 +167,6 @@ namespace Nover
             return messages;
         }
 
-        private static string LoadHelpText()
-        {
-            if (SelectedLanguage == null)
-            {
-                return MissingLanguageMessage;
-            }
-            string selectedPath = Path.Combine(LanguageDirectory(SelectedLanguage), "help.txt");
-            if (File.Exists(selectedPath))
-            {
-                return File.ReadAllText(selectedPath);
-            }
-            string defaultPath = Path.Combine(LanguageDirectory("default"), "help.txt");
-            return File.Exists(defaultPath)
-                ? File.ReadAllText(defaultPath)
-                : MissingLanguageMessage;
-        }
-
-        private static string LanguageDirectory(string language)
-        {
-            return Path.Combine(
-                AppPaths.ExecutableDirectory,
-                "lang",
-                language);
-        }
     }
 
     internal sealed class CliException : Exception

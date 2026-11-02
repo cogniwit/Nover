@@ -7,6 +7,7 @@ $sourceRoot = Join-Path $projectRoot 'src'
 $resourceRoot = Join-Path $sourceRoot 'resources'
 $deliveryRoot = Join-Path $projectRoot 'outputs'
 $iconFile = Join-Path $resourceRoot 'nover.ico'
+$langRoot = Join-Path $resourceRoot 'lang'
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) ('nover-build-' + [Guid]::NewGuid().ToString('N'))
 $releaseArchiveTemporary = Join-Path ([IO.Path]::GetTempPath()) ('nover-release-' + [Guid]::NewGuid().ToString('N') + '.zip')
@@ -19,6 +20,10 @@ function Assert-FileExists {
 }
 
 Assert-FileExists $iconFile
+Assert-FileExists (Join-Path $langRoot 'Chinese\messages.ini')
+Assert-FileExists (Join-Path $langRoot 'Chinese\help.txt')
+Assert-FileExists (Join-Path $langRoot 'English\messages.ini')
+Assert-FileExists (Join-Path $langRoot 'English\help.txt')
 
 $programSource = Join-Path $sourceRoot 'Program.cs'
 Assert-FileExists $programSource
@@ -71,14 +76,10 @@ try {
 
     Assert-FileExists $compiledExe
     Assert-FileExists (Join-Path $resourceRoot 'nover.config')
-    Assert-FileExists (Join-Path $resourceRoot 'lang\default\messages.ini')
-    Assert-FileExists (Join-Path $resourceRoot 'lang\default\help.txt')
-    Assert-FileExists (Join-Path $resourceRoot 'lang\zh-CN\messages.ini')
-    Assert-FileExists (Join-Path $resourceRoot 'lang\zh-CN\help.txt')
 
     Copy-Item -LiteralPath (Join-Path $resourceRoot 'nover.config') -Destination $temporaryRoot
     Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination $temporaryRoot
-    Copy-Item -LiteralPath (Join-Path $resourceRoot 'lang') -Destination $temporaryRoot -Recurse
+    Copy-Item -LiteralPath $langRoot -Destination $temporaryRoot -Recurse
 
     $resolvedDelivery = [IO.Path]::GetFullPath($deliveryRoot)
     $deliveryPrefix = $resolvedDelivery.TrimEnd('\') + '\'
@@ -97,10 +98,10 @@ try {
 
     $deliveryLang = Join-Path $resolvedDelivery 'lang'
     if ([IO.Directory]::Exists($deliveryLang)) {
-        # 递归删除前确认 lang 位于 outputs 内。
+        # 删除旧语言目录后重新复制。
         $resolvedLang = [IO.Path]::GetFullPath($deliveryLang)
         if (-not ($resolvedLang + '\').StartsWith($deliveryPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-            throw "Refusing to replace language directory outside outputs: $resolvedLang"
+            throw "Refusing to remove language directory outside outputs: $resolvedLang"
         }
         [IO.Directory]::Delete($resolvedLang, $true)
     }
