@@ -2,11 +2,10 @@
 
 本项目采用 [Keep a Changelog](https://keepachangelog.com/) 的结构，并使用语义化版本号。
 
-This project follows the [Keep a Changelog](https://keepachangelog.com/) format and Semantic Versioning.
 
 ## 中文
 
-### [1.0.2] - 2026-11-02
+### [v1.0.2] - 2026-11-02
 
 #### 新增
 
@@ -34,32 +33,8 @@ This project follows the [Keep a Changelog](https://keepachangelog.com/) format 
 
 - 移除内嵌语言资源，语言统一从 `lang` 目录读取。
 
-## English
+### [v1.0.1] - 2026-10-26
 
-### [1.0.2] - 2026-11-02
+#### 发布
 
-#### Added
-
-- Added external `lang\Chinese` and `lang\English` language directories.
-- Added `nover --lang` to list available languages and mark the default and active language.
-- Added `nover --lang <directory>` to switch and save the language.
-- Added support for user-provided language directories containing `messages.ini` and `help.txt`.
-- Added clean Windows release ZIP and SHA-256 checksum generation during the build.
-
-#### Changed
-
-- `lang=auto` is now the default: Chinese systems use Chinese, while English and other systems use English.
-- A manually selected language is saved in `nover.config`, so later commands do not need `--lang`.
-- When a configured language is unavailable, Nover falls back to English first and then other complete language directories.
-- With no arguments, Nover initializes when needed and otherwise shows help.
-- Simplified help into usage, commands, options, targets, and examples.
-
-#### Fixed
-
-- Fixed exact version selection so it compares the patch component.
-- Fixed startup exiting immediately when the configured language was missing.
-- Fixed invalid language settings being saved when a language directory was unavailable.
-
-#### Removed
-
-- Removed embedded language resources; languages are now loaded from `lang`.
+- 第一个版本发布。

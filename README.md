@@ -2,7 +2,9 @@
 
 简体中文 | [English](README.en.md) | [更新日志](CHANGELOG.md)
 
-Nover 是一个便携式 Windows Node.js 全局版本管理器。它使用稳定的 shim 切换 `node`、`npm` 和 `npx`，不需要管理员权限，也不会创建 junction。
+Nover 是一个便携的 Windows Node.js 全局版本管理器。
+
+只维护一个全局版本，使用 shim 切换 `node`、`npm`、`npx`，无需管理员权限、不建 junction 或符号链接，版本、配置与运行状态随程序目录整体移动。支持 `x64`/`arm64`/`x86`，界面语言跟随系统，并提供在线版本查询与安装诊断。
 
 ```powershell
 nover install lts --use
@@ -10,62 +12,35 @@ node -v
 npm install
 ```
 
-Nover 管理当前用户的一个全局 Node.js 版本。所有版本、配置和运行状态都保存在程序目录中，整个目录可以直接移动。
-
-## 设计原则
-
-- 全局版本切换应保持简单、直接
-- 不依赖管理员权限或目录链接
-- 配置、版本和运行状态应便于整体移动
-- 下载、解压和删除操作应具备明确的安全边界
-
-## 特点
-
-- 只维护一个全局 Node.js 版本
-- 切换版本不需要管理员权限
-- 不创建 junction 或符号链接
-- 支持 `x64`、`arm64` 和 `x86`
-- 默认跟随系统语言，支持外置语言包
-- 便携运行，配置和版本跟随程序目录
-- 提供在线版本查询和安装状态诊断
-
 ## 环境要求
 
 - Windows 10 或更高版本
 - .NET Framework 4.5 或更高版本
-- 源码构建需要 PowerShell 5.1
+- 从源码构建需 PowerShell 5.1
 
 ## 快速开始
 
-从 GitHub Releases 获取 Nover，并解压到一个固定位置：
-
-```text
-D:\Tools\Nover
-```
-
-进入该目录并运行：
+从 GitHub Releases 下载，解压到固定位置（如 `D:\Tools\Nover`），进入该目录运行：
 
 ```powershell
 .\nover.exe
 ```
 
-首次运行会提示创建 shim，并将 Nover 目录加入用户 PATH：
+首次运行会提示创建 shim 并把 Nover 目录加入用户 PATH：
 
 ```text
 需要初始化 Nover。
 是否在 "D:\Tools\Nover" 创建 shim，并将该目录加入用户 PATH？[y/n]：
 ```
 
-输入 `y` 继续。初始化完成后，请打开新终端：
+输入 `y` 后重开终端，使 PATH 生效，再执行：
 
 ```powershell
 nover install lts --use
 node -v
 ```
 
-初始化或修复完成后，请重新打开终端以确保环境得到更新。
-
-不输入任何参数运行时，如果尚未初始化会执行初始化；已初始化且无需修复时显示帮助。
+无参数运行时：未初始化则执行初始化；已初始化且无需修复则显示帮助。
 
 ## 命令
 
@@ -80,76 +55,21 @@ node -v
 | `nover --version` | 显示 Nover 版本 |
 | `nover --help` | 显示帮助 |
 
-### 通用选项
+### 选项
 
-| 选项 | 说明 |
-| --- | --- |
-| `--lang <language>` | 切换并保存 `lang\` 下的语言目录 |
-
-### 安装选项
-
-| 选项 | 说明 |
-| --- | --- |
-| `--use` | 安装后立即切换 |
-| `--arch <arch>` | `x64`、`arm64` 或 `x86` |
-| `--mirror <url>` | 临时使用其他 Node.js 镜像 |
-
-### 在线查询选项
-
-| 选项 | 说明 |
-| --- | --- |
-| `--lts` | 只显示 LTS 版本 |
-| `--all` | 显示全部匹配版本 |
-| `--major <major>` | 按主版本筛选 |
-| `--offset <count>` | 跳过指定数量的结果 |
-| `--limit <count>` | 限制结果数量，默认 20，最大 5000 |
-| `--mirror <url>` | 临时使用其他 Node.js 镜像 |
-
-`--all` 和 `--limit` 不能同时使用。
-
-## 语言
-
-未手动设置时，Nover 根据 Windows 界面语言自动选择：
-
-```text
-中文系统 -> Chinese
-英文系统 -> English
-其他系统 -> English
-```
-
-默认配置为 `lang=auto`。
-
-手动切换后，语言会保存到 `nover.config`，后续命令无需重复指定：
-
-```powershell
-nover --lang
-nover --lang English
-nover list
-
-nover --lang Chinese
-```
-
-运行时包含 `lang\Chinese` 和 `lang\English`。也可以复制任一目录到新名称后翻译其中的文件：
-
-```text
-lang\MyLanguage\
-  messages.ini
-  help.txt
-```
-
-然后执行：
-
-```powershell
-nover --lang MyLanguage
-```
-
-每个语言目录都必须同时包含 `messages.ini` 和 `help.txt`。
-
-如果配置的语言目录不存在，Nover 会优先改用 English；English 也不可用时，再按名称顺序寻找其他完整语言目录。
+| 选项 | 适用 | 说明 |
+| --- | --- | --- |
+| `--lang <language>` | 通用 | 切换并保存 `lang\` 下的语言目录 |
+| `--use` | install | 安装后立即切换 |
+| `--arch <arch>` | install | `x64`、`arm64` 或 `x86` |
+| `--mirror <url>` | install、remote | 临时使用其他 Node.js 镜像 |
+| `--lts` | remote | 只显示 LTS 版本 |
+| `--all` | remote | 显示全部匹配版本，与 `--limit` 互斥 |
+| `--major <major>` | remote | 按主版本筛选 |
+| `--offset <count>` | remote | 跳过指定数量的结果 |
+| `--limit <count>` | remote | 限制结果数量，默认 20，最大 5000 |
 
 ## 版本选择
-
-Nover 只支持清晰的数字版本选择：
 
 | 格式 | 含义 |
 | --- | --- |
@@ -159,19 +79,20 @@ Nover 只支持清晰的数字版本选择：
 | `24.22` | 最高的 Node 24.22 补丁版本 |
 | `24.22.1` | 精确的 Node 24.22.1 |
 
+只支持上表中的数字写法，不接受模糊版本。
+
 ## 常用操作
 
-安装并切换：
-
 ```powershell
-nover install 24.22.1 --use
+nover install 24.22.1 --use    # 安装并切换
+nover list                     # 查看本地版本
+nover remote 24 --all          # 查询 Node 24 全部版本
+nover remote --major 24 --lts  # 只查 LTS
+nover remove 24                # 删除版本
+nover check                    # 检查安装状态
 ```
 
-查看本地版本：
-
-```powershell
-nover list
-```
+`nover list` 的输出：
 
 ```text
 Current: v24.22.1
@@ -181,27 +102,7 @@ Installed:
   22.23.4
 ```
 
-查询在线版本：
-
-```powershell
-nover remote --limit 50
-nover remote 24 --all
-nover remote --major 24 --lts
-```
-
-删除版本：
-
-```powershell
-nover remove 24
-```
-
-当前全局版本不能删除。删除前请先切换到其他版本。
-
-检查安装状态：
-
-```powershell
-nover check
-```
+当前全局版本不能删除，删除前请先切换到其他版本。
 
 ## 工作原理
 
@@ -209,14 +110,35 @@ Nover 在程序目录中维护：
 
 ```text
 nover.exe       主程序
-node.exe        根据 active.txt 转发到真实 node.exe
+node.exe        按 active.txt 转发到真实 node.exe
 npm.cmd         转发到当前版本 npm
 npx.cmd         转发到当前版本 npx
 active.txt      当前全局版本
 versions\       已安装的 Node.js 版本
 ```
 
-切换版本时只更新 `active.txt`，因此不需要删除或重建目录链接。
+切换版本只更新 `active.txt`，因此不需要删除或重建目录链接。
+
+## 语言
+
+默认为 `lang=auto`：中文系统用 Chinese，其他系统用 English。手动切换后会写入 `nover.config`，后续命令无需重复指定：
+
+```powershell
+nover --lang English
+nover list
+```
+
+运行时自带 `lang\Chinese` 和 `lang\English`。新增语言只需复制任一目录、翻译其中的文件：
+
+```text
+lang\MyLanguage\
+  messages.ini
+  help.txt
+```
+
+再执行 `nover --lang MyLanguage` 即可。每个语言目录必须同时包含 `messages.ini` 和 `help.txt`。
+
+配置的语言目录不存在时，优先回退到 English；English 也不可用时，按名称顺序寻找其他完整目录。
 
 ## 移动目录
 
@@ -228,9 +150,7 @@ cd E:\Apps\Nover
 .\nover.exe
 ```
 
-如果 `install_path` 与当前位置不同，Nover 会询问是否更新用户 PATH。确认后会删除已知旧路径，并将新路径放到用户 PATH 前部。
-
-Nover 只管理用户 PATH。手动添加到系统 PATH 的旧路径需要单独删除。
+若 `install_path` 与当前位置不符，Nover 会询问是否更新用户 PATH；确认后删除已知旧路径，并把新路径放到用户 PATH 前部。Nover 只管理用户 PATH，手动加到系统 PATH 的旧路径需自行清理。
 
 ## 从源码构建
 
@@ -250,14 +170,14 @@ outputs/
   lang/
 ```
 
-构建完成后还会在项目根目录生成干净的发布包和校验文件：
+同时在项目根目录生成发布包与校验文件：
 
 ```text
 Nover-<版本>-windows.zip
 Nover-<版本>-windows.zip.sha256
 ```
 
-ZIP 内容为 `nover.exe`、`nover.config`、`LICENSE` 和 `lang/`，不包含本机的 `versions`、shim 或 `active.txt`。
+ZIP 仅含 `nover.exe`、`nover.config`、`LICENSE` 和 `lang/`，不含本机的 `versions`、shim 和 `active.txt`。
 
 项目结构：
 
@@ -282,6 +202,4 @@ Nover/
 
 ## 许可证
 
-本项目使用 [MIT License](LICENSE) 发布。
-
-Nover 是独立项目，与 Node.js 官方没有隶属关系。
+本项目使用 [MIT License](LICENSE) 发布。Nover 是独立项目，与 Node.js 官方没有隶属关系。
